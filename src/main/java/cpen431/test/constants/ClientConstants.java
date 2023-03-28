@@ -1,6 +1,6 @@
 package cpen431.test.constants;
 
-public class ClientConstnats {
+public class ClientConstants {
 
     public static final String FILEPATH = "C:\\Users\\Arnold\\Desktop\\Yikes\\2022W\\CPEN431\\cpen431_2023_project_g5\\servers.txt";
     public static final int MAX_KEY_BYTE_SIZE = 32;

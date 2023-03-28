@@ -1,25 +1,17 @@
 package cpen431.test;
 
 import com.google.protobuf.ByteString;
-import cpen431.test.protobuf.KeyValueRequest;
 import cpen431.test.protobuf.KeyValueResponse;
-import cpen431.test.protobuf.Message;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
-import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.zip.CRC32;
 
 import static cpen431.test.Helpers.*;
-import static cpen431.test.constants.ClientConstnats.*;
+import static cpen431.test.constants.ClientConstants.*;
 
 /**
  * Test client for CPEN 431 G5 project

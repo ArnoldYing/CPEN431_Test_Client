@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.zip.CRC32;
 
-import static cpen431.test.constants.ClientConstnats.*;
+import static cpen431.test.constants.ClientConstants.*;
 
 public class Helpers {
 
