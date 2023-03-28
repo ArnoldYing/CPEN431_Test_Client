@@ -1,0 +1,12 @@
+syntax = "proto3";
+option java_package = "cpen431.test.protobuf";
+option java_outer_classname = "KeyValueRequest";
+
+message KVRequest {
+    uint32 command = 1;
+    bytes key = 2;
+    bytes value = 3;
+    int32 version = 4;
+    string return_address = 5;
+    int32 return_port = 6;
+}

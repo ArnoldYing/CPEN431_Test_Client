@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+option java_package = "cpen431.test.protobuf";
+option java_outer_classname = "Message";
+
+message Msg {
+    bytes messageID = 1;
+    bytes payload = 2;
+    fixed64 checkSum = 3;
+    int32 type = 4;
+}

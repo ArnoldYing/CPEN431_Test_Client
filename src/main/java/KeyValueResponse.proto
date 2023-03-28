@@ -1,0 +1,13 @@
+syntax = "proto3";
+option java_package = "cpen431.test.protobuf";
+option java_outer_classname = "KeyValueResponse";
+
+message KVResponse {
+    uint32 errCode = 1;
+    bytes value = 2;
+    int32 pid = 3;
+    int32 version = 4;
+    int32 overloadWaitTime = 5;
+    int32 membershipCount = 6;
+}
+
