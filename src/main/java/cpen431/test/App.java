@@ -6,9 +6,7 @@ import cpen431.test.protobuf.KeyValueResponse;
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import static cpen431.test.Helpers.*;
 import static cpen431.test.constants.ClientConstants.*;
@@ -28,7 +26,7 @@ public class App
     static {
         try {
             testClientSocket = new DatagramSocket(TEST_PORT);
-            testClientSocket.setSoTimeout(1000);
+            testClientSocket.setSoTimeout(100000);
         } catch (SocketException e) {
             throw new RuntimeException(e);
         }
@@ -37,13 +35,139 @@ public class App
     public static void main( String[] args )
     {
         readServersTxt(nodeTable);
-        generateTestData(10000, testStore);
+        generateTestData(1000, testStore);
 
         getAllPID();
         resetAllServers();
 
-        singleFrontEndPut(nodeTable.get(0));
+        randomFrontEndPut();
         System.out.println("Finished putting to " + nodeTable.get(0));
+        randomFrontEndGet();
+        System.out.println("Finished getting to " + nodeTable.get(0));
+
+
+
+//        int retryAttempt = 0;
+//        Scanner scanner = new Scanner(System.in);
+//
+//        DatagramSocket primarySocket;
+//
+//        int port = 25000;
+//        primarySocket = new DatagramSocket(port);
+//        primarySocket.setReceiveBufferSize(RECEIVE_BUFFER_SIZE);
+//        InetAddress destinationAddress = InetAddress.getByName("184.169.226.201");
+//        int destinationPort = Integer.parseInt("43120");
+//
+//        byte[] messageID = {50};
+//        byte[] key = {56}; // This goes to 43114
+//        byte[] value = {50};
+//
+//        byte[] payload = createPutPayload(key, value);
+//
+//        sendMessage(messageID, payload, destinationAddress, destinationPort, primarySocket);
+//
+//        //Now get the response
+//        byte[] rcvBuf = new byte[MAX_MESSAGE_BYTE_SIZE];
+//        DatagramPacket rcv = new DatagramPacket(rcvBuf, rcvBuf.length);
+//
+//        Message.Msg rcvMsg = receiveMessage(primarySocket, rcv);
+//
+//        KeyValueResponse.KVResponse incomingRequest = KeyValueResponse.KVResponse.parseFrom(rcvMsg.getPayload().toByteArray());
+//
+//        System.out.println("Error Code");
+//        System.out.println(incomingRequest.getErrCode());
+//
+//        if(incomingRequest.getErrCode() != 0){
+//            System.out.println("Get not done correctly");
+//        }
+//
+//        payload = createGetRequestPayload(key);
+//
+//        messageID = new byte[]{52};
+//        sendMessage(messageID, payload, destinationAddress, destinationPort, primarySocket);
+//
+//        rcvMsg = receiveMessage(primarySocket, rcv);
+//        incomingRequest = KeyValueResponse.KVResponse.parseFrom(rcvMsg.getPayload().toByteArray());
+//
+//        if(!Arrays.toString(incomingRequest.getValue().toByteArray()).equals(Arrays.toString(value))) {
+//            System.out.println("Monka shake we have big problems");
+//            return;
+//        }
+//
+//        destinationPort = Integer.parseInt("43114");
+//        payload = createGetPidPayload();
+//
+//        messageID = new byte[]{53};
+//        sendMessage(messageID, payload, destinationAddress, destinationPort, primarySocket);
+//
+//        rcvMsg = receiveMessage(primarySocket, rcv);
+//        incomingRequest = KeyValueResponse.KVResponse.parseFrom(rcvMsg.getPayload().toByteArray());
+//
+//        System.out.println("Pid is: ");
+//        System.out.println(incomingRequest.getPid());
+//
+//        System.out.println("Use the command: kill -STOP " + incomingRequest.getPid()+ " To suspend the java process");
+//
+//        System.out.println("Type enter after entering the above command into your ec2 server.");
+//        String line = scanner.nextLine();
+//
+//        System.out.println("Waiting 30 seconds");
+//        TimeUnit.SECONDS.sleep(30);
+//
+//        System.out.println("Moving on to see if the get was replicated");
+//
+//        //Get all information from successor now
+//        destinationPort = Integer.parseInt("43121");
+//
+//        payload = createGetRequestPayload(key);
+//
+//        messageID = new byte[]{54};
+//        sendMessage(messageID, payload, destinationAddress, destinationPort, primarySocket);
+//
+//        rcvMsg = receiveMessage(primarySocket, rcv);
+//        incomingRequest = KeyValueResponse.KVResponse.parseFrom(rcvMsg.getPayload().toByteArray());
+//
+//        System.out.println("Value from successor");
+//        System.out.println(Arrays.toString(incomingRequest.getValue().toByteArray()));
+//
+//        //Now turn off server 43113
+//        destinationPort = Integer.parseInt("43113");
+//
+//        payload = createGetPidPayload();
+//        messageID = new byte[]{55};
+//        sendMessage(messageID, payload, destinationAddress, destinationPort, primarySocket);
+//
+//        rcvMsg = receiveMessage(primarySocket, rcv);
+//        incomingRequest = KeyValueResponse.KVResponse.parseFrom(rcvMsg.getPayload().toByteArray());
+//
+//        System.out.println("Pid is: ");
+//        System.out.println(incomingRequest.getPid());
+//
+//        System.out.println("Use the command: kill -STOP " + incomingRequest.getPid()+ " To suspend the java process");
+//
+//        System.out.println("Type enter after entering the above command into your ec2 server.");
+//        line = scanner.nextLine();
+//
+//        System.out.println("Waiting 30 seconds");
+//        TimeUnit.SECONDS.sleep(30);
+//
+//        System.out.println("Seeing if the data was correctly replicated in new main replica 43112");
+//
+//        //Get all information from successor now
+//        destinationPort = Integer.parseInt("43122");
+//
+//        payload = createGetRequestPayload(key);
+//
+//        messageID = new byte[]{56};
+//
+//        sendMessage(messageID, payload, destinationAddress, destinationPort, primarySocket);
+//
+//        rcvMsg = receiveMessage(primarySocket, rcv);
+//        incomingRequest = KeyValueResponse.KVResponse.parseFrom(rcvMsg.getPayload().toByteArray());
+//
+//        System.out.println("Value from successor");
+//        System.out.println(Arrays.toString(incomingRequest.getValue().toByteArray()));
+
     }
 
 
@@ -80,6 +204,60 @@ public class App
             KeyValueResponse.KVResponse res = waitForResponse(messageID, testClientSocket);
             if (res == null || res.getErrCode() != 0) {
                 System.out.println("Error in wipeout");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void singleFrontEndGet(String server) {
+        try {
+            for (ByteString key : testStore.keySet()) {
+                byte[] messageID = generateMessageID();
+                sendMessage(messageID,
+                        createGetRequestPayload(key.toByteArray()), server, testClientSocket);
+                KeyValueResponse.KVResponse res = waitForResponse(messageID, testClientSocket);
+                if (res == null || res.getErrCode() != 0) {
+                    System.out.println("Error in get");
+                    continue;
+                }
+                assert Arrays.equals(res.getValue().toByteArray(), testStore.get(key)) && res.getVersion() == 0;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void randomFrontEndPut() {
+        try {
+            for (ByteString key : testStore.keySet()) {
+                String server = nodeTable.get(new Random().nextInt(nodeTable.size()));
+                byte[] messageID = generateMessageID();
+                sendMessage(messageID,
+                        createPutPayload(key.toByteArray(), testStore.get(key)), server, testClientSocket);
+                KeyValueResponse.KVResponse res = waitForResponse(messageID, testClientSocket);
+                if (res == null || res.getErrCode() != 0) {
+                    System.out.println("Error in put");
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void randomFrontEndGet() {
+        try {
+            for (ByteString key : testStore.keySet()) {
+                String server = nodeTable.get(new Random().nextInt(nodeTable.size()));
+                byte[] messageID = generateMessageID();
+                sendMessage(messageID,
+                        createGetRequestPayload(key.toByteArray()), server, testClientSocket);
+                KeyValueResponse.KVResponse res = waitForResponse(messageID, testClientSocket);
+                if (res == null || res.getErrCode() != 0) {
+                    System.out.println("Error in get");
+                    continue;
+                }
+                assert Arrays.equals(res.getValue().toByteArray(), testStore.get(key)) && res.getVersion() == 0;
             }
         } catch (IOException e) {
             e.printStackTrace();

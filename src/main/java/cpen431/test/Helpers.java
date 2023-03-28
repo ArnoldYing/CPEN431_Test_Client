@@ -78,7 +78,7 @@ public class Helpers {
     public static byte[] createGetRequestPayload(byte[] key){
         KeyValueRequest.KVRequest.Builder request = KeyValueRequest.KVRequest.newBuilder();
 
-        request.setCommand(2);
+        request.setCommand(GET_REQUEST);
         request.setKey(ByteString.copyFrom(key));
         request.setVersion(0);
 
