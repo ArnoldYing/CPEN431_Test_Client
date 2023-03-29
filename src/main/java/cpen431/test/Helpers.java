@@ -56,7 +56,7 @@ public class Helpers {
 
     }
 
-    public static byte[] createPutPayload(byte[] key, byte[] value){
+    public static byte[] createPutRequestPayload(byte[] key, byte[] value){
         KeyValueRequest.KVRequest.Builder request = KeyValueRequest.KVRequest.newBuilder();
 
         request.setCommand(1);
@@ -104,7 +104,6 @@ public class Helpers {
         try {
             primarySocket.receive(rcv);
         } catch (SocketTimeoutException e) {
-            System.out.println("ERROR: socket timeout");
             return null;
         }
 
@@ -155,7 +154,34 @@ public class Helpers {
         if (rcvMsg == null) return null;
 
         assert Arrays.equals(messageID, rcvMsg.getMessageID().toByteArray());
-        KeyValueResponse.KVResponse response = KeyValueResponse.KVResponse.parseFrom(rcvMsg.getPayload());
-        return response;
+        return KeyValueResponse.KVResponse.parseFrom(rcvMsg.getPayload());
+    }
+
+    public static KeyValueResponse.KVResponse sendToServer(byte[] messageId, byte[] payload,
+                                                           String destinationAddressAndPort, DatagramSocket primarySocket) throws IOException {
+        KeyValueResponse.KVResponse res = null;
+        for (int i = 0; i < RETRY_COUNT; i++) {
+            try {
+                sendMessage(messageId, payload, destinationAddressAndPort, primarySocket);
+                res = waitForResponse(messageId, primarySocket);
+            } catch (SocketTimeoutException e) {
+                continue;
+            }
+            break;
+        }
+
+        return res;
+    }
+
+    public static boolean errorInResponse(KeyValueResponse.KVResponse res) {
+        if (res == null) {
+            System.out.println("Error in request");
+            return true;
+        } else if (res.getErrCode() != OPERATION_SUCCESSFUL) {
+            System.out.println(ERROR_CODE_MAPPING.get(res.getErrCode()));
+            return true;
+        }
+
+        return false;
     }
 }

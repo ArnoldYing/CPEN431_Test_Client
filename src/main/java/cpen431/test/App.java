@@ -19,14 +19,16 @@ public class App
 {
 
     public static List<String> nodeTable = new ArrayList<>();
+    public static Scanner scanner = new Scanner(System.in);
     public static HashMap<String, Integer> pidTable = new HashMap<>();
     public static HashMap<ByteString, byte[]> testStore = new HashMap<>();
+    public static HashMap<ByteString, byte[]> actuallyStored = new HashMap<>();
     public static DatagramSocket testClientSocket;
 
     static {
         try {
             testClientSocket = new DatagramSocket(TEST_PORT);
-            testClientSocket.setSoTimeout(100000);
+            testClientSocket.setSoTimeout(1000);
         } catch (SocketException e) {
             throw new RuntimeException(e);
         }
@@ -35,13 +37,19 @@ public class App
     public static void main( String[] args )
     {
         readServersTxt(nodeTable);
-        generateTestData(1000, testStore);
+        generateTestData(500, testStore);
 
         getAllPID();
         resetAllServers();
 
         randomFrontEndPut();
         System.out.println("Finished putting to " + nodeTable.get(0));
+
+
+        System.out.println("Type enter after to get");
+        String line = scanner.nextLine();
+        System.out.println("Starting gets");
+
         randomFrontEndGet();
         System.out.println("Finished getting to " + nodeTable.get(0));
 
@@ -171,16 +179,19 @@ public class App
     }
 
 
+    public static void resetAllServers() {
+        for (String node : nodeTable) {
+            wipeServer(node);
+        }
+        System.out.println("reset all servers");
+    }
+
     public static void getAllPID() {
         for (String node : nodeTable) {
             try {
-                sendMessage(new byte[]{0},
+                KeyValueResponse.KVResponse res = sendToServer(new byte[]{0},
                         createGetPidPayload(), node, testClientSocket);
-                KeyValueResponse.KVResponse res = waitForResponse(new byte[]{0}, testClientSocket);
-                if (res == null || res.getErrCode() != 0) {
-                    System.out.println("Error in getPID");
-                    continue;
-                }
+                if (errorInResponse(res)) continue;
                 pidTable.put(node, res.getPid());
                 System.out.println("PID of " + node + " is " + res.getPid());
             } catch (IOException e) {
@@ -189,22 +200,12 @@ public class App
         }
     }
 
-    public static void resetAllServers() {
-        for (String node : nodeTable) {
-            wipeServer(node);
-        }
-        System.out.println("reset all servers");
-    }
-
     public static void wipeServer(String server) {
         try {
             byte[] messageID = generateMessageID();
-            sendMessage(messageID,
+            KeyValueResponse.KVResponse res = sendToServer(messageID,
                     createWipeoutPayload(), server, testClientSocket);
-            KeyValueResponse.KVResponse res = waitForResponse(messageID, testClientSocket);
-            if (res == null || res.getErrCode() != 0) {
-                System.out.println("Error in wipeout");
-            }
+            errorInResponse(res);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -214,13 +215,9 @@ public class App
         try {
             for (ByteString key : testStore.keySet()) {
                 byte[] messageID = generateMessageID();
-                sendMessage(messageID,
+                KeyValueResponse.KVResponse res = sendToServer(messageID,
                         createGetRequestPayload(key.toByteArray()), server, testClientSocket);
-                KeyValueResponse.KVResponse res = waitForResponse(messageID, testClientSocket);
-                if (res == null || res.getErrCode() != 0) {
-                    System.out.println("Error in get");
-                    continue;
-                }
+                if (errorInResponse(res)) continue;
                 assert Arrays.equals(res.getValue().toByteArray(), testStore.get(key)) && res.getVersion() == 0;
             }
         } catch (IOException e) {
@@ -233,12 +230,10 @@ public class App
             for (ByteString key : testStore.keySet()) {
                 String server = nodeTable.get(new Random().nextInt(nodeTable.size()));
                 byte[] messageID = generateMessageID();
-                sendMessage(messageID,
-                        createPutPayload(key.toByteArray(), testStore.get(key)), server, testClientSocket);
-                KeyValueResponse.KVResponse res = waitForResponse(messageID, testClientSocket);
-                if (res == null || res.getErrCode() != 0) {
-                    System.out.println("Error in put");
-                }
+                KeyValueResponse.KVResponse res = sendToServer(messageID,
+                        createPutRequestPayload(key.toByteArray(), testStore.get(key)), server, testClientSocket);
+                if (errorInResponse(res)) continue;
+                actuallyStored.put(key, testStore.get(key));
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -250,14 +245,10 @@ public class App
             for (ByteString key : testStore.keySet()) {
                 String server = nodeTable.get(new Random().nextInt(nodeTable.size()));
                 byte[] messageID = generateMessageID();
-                sendMessage(messageID,
+                KeyValueResponse.KVResponse res = sendToServer(messageID,
                         createGetRequestPayload(key.toByteArray()), server, testClientSocket);
-                KeyValueResponse.KVResponse res = waitForResponse(messageID, testClientSocket);
-                if (res == null || res.getErrCode() != 0) {
-                    System.out.println("Error in get");
-                    continue;
-                }
-                assert Arrays.equals(res.getValue().toByteArray(), testStore.get(key)) && res.getVersion() == 0;
+                if (errorInResponse(res)) continue;
+                assert Arrays.equals(res.getValue().toByteArray(), actuallyStored.get(key)) && res.getVersion() == 0;
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -268,12 +259,10 @@ public class App
         try {
             for (ByteString key : testStore.keySet()) {
                 byte[] messageID = generateMessageID();
-                sendMessage(messageID,
-                        createPutPayload(key.toByteArray(), testStore.get(key)), server, testClientSocket);
-                KeyValueResponse.KVResponse res = waitForResponse(messageID, testClientSocket);
-                if (res == null || res.getErrCode() != 0) {
-                    System.out.println("Error in put");
-                }
+                KeyValueResponse.KVResponse res = sendToServer(messageID,
+                        createPutRequestPayload(key.toByteArray(), testStore.get(key)), server, testClientSocket);
+                if (errorInResponse(res)) continue;
+                actuallyStored.put(key, testStore.get(key));
             }
         } catch (IOException e) {
             e.printStackTrace();
